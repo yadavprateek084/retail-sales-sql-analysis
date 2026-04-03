@@ -219,13 +219,26 @@ where r_n = 1;
 ### 8. Find the top 5 customers based on highest total sales
 
 ```sql
-select
-    customer_id,
-    sum(total_sale) as ltv
-from retail_sales
-group by customer_id
-order by ltv desc
-limit 5;
+	with ltv_sales as
+	(
+    select 
+		customer_id,
+		sum(total_sale) as ltv
+	from retail_sales
+	group by 1
+    )
+	select * from ltv_sales order by ltv desc
+	limit 5
+
+	-- or
+
+	select 
+		customer_id,
+		sum(total_sale) as ltv,
+		dense_rank()over( order by sum(total_sale) desc) as r_n
+	from retail_sales
+	group by 1
+	limit 5
 ```
 
 ### 9. Find the number of unique customers in each category
@@ -242,14 +255,31 @@ group by category;
 
 ```sql
 select
-    case
-        when extract(hour from sale_time) < 12 then 'Morning'
-        when extract(hour from sale_time) between 12 and 17 then 'Afternoon'
-        else 'Evening'
-    end as shifts,
-    count(transactions_id) as total_orders
-from retail_sales
-group by shifts;
+     case
+		when extract(hours from sale_time)<=12 then 'Morning'
+		when extract(hours from sale_time) Between 12 and 17 then 'Afternoon'
+		when extract(hours from sale_time)>17 then 'Evening'
+		end as shifts,
+		count(transactions_id) as counter
+	from retail_sales 
+	group by shifts
+
+	-- or
+
+	with sale_data as
+	(
+	select
+     case
+		when extract(hours from sale_time)<=12 then 'Morning'
+		when extract(hours from sale_time) Between 12 and 17 then 'Afternoon'
+		when extract(hours from sale_time)>17 then 'Evening'
+		end as shifts
+	from retail_sales 
+	)
+
+	select shifts,count(*)
+	from sale_data
+	group by 1
 ```
 
 ---
